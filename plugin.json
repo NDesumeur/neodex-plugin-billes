@@ -1,0 +1,22 @@
+{
+  "id": "neodex.billes",
+  "name": "Billes",
+  "version": "1.0.0",
+  "author": "NDesumeur",
+  "description": "Le solitaire en croix : une bille saute par-dessus sa voisine dans un trou vide et la fait sortir. Finis avec une seule bille, au centre si tu peux.",
+  "icon": "icon.png",
+  "entry": "index.js",
+  "view": "billes",
+  "neobase": ">=4.0.0",
+  "type": "app",
+  "category": "Jeux",
+  "syncMode": "progression",
+  "syncInfo": "Records par plateau, réussites.",
+  "mobile": false,
+  "system": false,
+  "dependencies": {},
+  "sdk": "2.1.0",
+  "permissions": [
+    "storage"
+  ]
+}
