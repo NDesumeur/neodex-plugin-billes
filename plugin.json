@@ -3,7 +3,7 @@
   "name": "Billes",
   "version": "1.0.0",
   "author": "NDesumeur",
-  "description": "Le solitaire en croix : une bille saute par-dessus sa voisine dans un trou vide et la fait sortir. Finis avec une seule bille, au centre si tu peux.",
+  "description": "Le solitaire en croix : clique une bille, puis le trou allumé où elle peut arriver ; elle saute par-dessus sa voisine, qui sort du plateau. Finis avec une seule bille, au centre pour une partie parfaite. Quatre plateaux (croix anglaise, croix française, petite croix, pyramide), annulation sans limite, record et réussites par plateau.",
   "icon": "icon.png",
   "entry": "index.js",
   "view": "billes",
