@@ -1,41 +1,43 @@
 # Billes (Marbles)
 
-Peg solitaire, the marble puzzle on a board full of holes: on each move, a marble jumps over its neighbour and removes it. You must finish with a single marble, and in the centre for a perfect game.
+Peg solitaire, the marble puzzle on a board full of holes: on each move, a marble jumps over its neighbour and removes it. You must finish with a single marble, and on the golden hole for a perfect game.
 
 *Version française : [README.md](README.md)*
 
 ## How to play
 
-1. Click a marble: it lifts, and the holes it can land in light up in yellow.
-2. Click one of those holes: the marble jumps in a straight line (horizontal or vertical, never diagonal) over its neighbour, and the jumped marble leaves the board.
+1. Click a glass marble: it lifts, and the holes it can land in light up in yellow.
+2. Click one of those holes: the marble hops in an arc over its neighbour, and the jumped marble rolls into the gutter around the wooden board, where removed marbles line up.
 3. The game ends when no jump is possible any more.
 
-- **Backspace** or **Ctrl+Z** undoes the last jump, without limit: you learn by going back, even after the game is over.
-- At the top, the counter shows the marbles left and the number of jumps still possible.
+- **Backspace** or **Ctrl+Z** undoes the last jump, without limit, even after the game is over.
+- At the top, the counter shows the marbles left, and the **indicator** tells you live whether you can still end with a single marble ("ONE MARBLE POSSIBLE") or not any more. It is computed by a solver, so it is never wrong.
 - **New game** resets the board; a click after the end restarts too.
 
 ## The boards
 
-Pick one from the list; each starts with a single empty hole.
+Pick one from the list. Each starts from an empty hole chosen so that ending with one marble is always possible, and the golden hole shows where to finish for a perfect.
 
-- **English cross**: 33 holes, 32 marbles, empty hole in the centre. The classic: 4 possible jumps at the start.
-- **French cross**: 37 holes, 36 marbles, with four extra holes in the corners of the cross.
+- **English cross**: 33 holes, 32 marbles, start and goal in the centre. The classic.
+- **French cross**: 37 holes, with four extra holes in the corners. From the centre it can never end with one marble, so it starts from a hole at the top.
 - **Small cross**: 21 marbles, to learn.
-- **Pyramid**: 15 marbles in a triangle.
+- **Pyramid**: 15 marbles in a triangle; here you also jump diagonally, along the sides of the triangle.
+- **Asymmetric**: 39 holes, a cross with uneven arms.
 
-## End of game
+## Puzzles
 
-- **Perfect: in the centre!**: one marble is left, in the middle hole of the board.
-- **A single marble!**: one marble is left somewhere else.
-- **No more jumps**: several marbles are left; the number is shown.
+The **Puzzles** tab offers 30 puzzles: a few marbles already placed, and a golden hole where the last marble must end. They range from a few jumps to more than twenty, on seven boards (the five above, the German cross, the diamond and the big triangle). Each one has at least one solution.
+
+- **3 stars**: solved without undo; **2 stars**: with three undos at most; **1 star**: solved anyway.
+- A puzzle unlocks once the previous one is solved.
 
 ## Statistics
 
-The Records panel shows, for the chosen board, your **record** (the fewest marbles left) and your **wins** (games finished with a single marble, out of the games played).
+The Records panel shows your **record** on the chosen board (the fewest marbles left), your **wins** (games ended with a single marble), your **perfects**, your solved puzzles and your stars.
 
 ## Data and sync
 
-Your records per board and your wins are stored by NeoDex, backed up and synced between your PCs when sync is on.
+Your records, wins and stars are stored by NeoDex, backed up and synced between your PCs when sync is on.
 
 ## Install
 
