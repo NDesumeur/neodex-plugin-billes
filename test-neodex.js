@@ -29,5 +29,10 @@ module.exports = async ({ pj, sleep }) => {
   for (const i of [9, 15, 22, 27]) { await S(`${B}.play(${i})`); await sleep(400); await shot('2-enigme' + (i + 1)); }
   const lay = await pj(`(() => { const c = document.getElementById('gc').getBoundingClientRect(), s = document.querySelector('.gSide').getBoundingClientRect(); return { beside: s.left >= c.right - 1, fits: document.documentElement.scrollWidth <= innerWidth + 1, w: innerWidth, h: Math.round(c.height) }; })()`);
   if (!lay.fits || (lay.w >= 900 && !lay.beside)) throw new Error('mise en page : ' + JSON.stringify(lay));
+  { // la zone de jeu tient dans la fenêtre, quelle que soit sa taille
+    const L = await pj(`(() => { const c = [...document.querySelectorAll('.gameBox canvas')].filter(c => c.offsetWidth).sort((a, b) => b.offsetWidth - a.offsetWidth)[0], r = c.getBoundingClientRect(); let s = 0; for (let e = c.parentElement; e; e = e.parentElement) s += e.scrollTop; return { top: Math.round(r.top + s), bottom: Math.round(r.bottom + s), h: Math.round(r.height), w: Math.round(r.width), wh: innerHeight, ww: innerWidth, sw: document.documentElement.scrollWidth }; })()`);
+    if (process.env.NEO_FIT_LOG) console.log('FIT', JSON.stringify(L));
+    if (L.bottom > L.wh + 1 || L.sw > L.ww + 1) throw new Error('la zone de jeu dépasse la fenêtre : ' + JSON.stringify(L));
+  }
   return 'croix anglaise au clic en ' + n + ' sauts (parfait) · énigme 1 à 3 étoiles · départ impossible reconnu · plateau ' + lay.h + ' px';
 };

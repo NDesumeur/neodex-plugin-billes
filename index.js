@@ -20,7 +20,7 @@ const CSS = `.gMain{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
 .gStats{display:grid;grid-template-columns:1fr auto;gap:4px 14px}
 .gStats b{text-align:right}
 .biGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px}.biGrid .btn{padding:6px 2px;min-width:0}
-.gameBox canvas{max-width:640px;aspect-ratio:320/340}`;
+.gameBox canvas{width:min(100%,max(240px,calc((100vh - 210px) * 320 / 340)));aspect-ratio:320/340}`;
 /* ---------- l'habillage pixel art, dessiné à la main : police bitmap (accents compris), cadres, boutons, icônes ----------
    Tout est en pixels pleins, agrandis par 2 sans lissage : aucun dégradé, aucune ombre floue. */
 const PXK = (() => {
