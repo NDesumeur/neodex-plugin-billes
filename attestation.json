@@ -1,9 +1,9 @@
 {
   "pluginId": "neodex.billes",
   "repo": "NDesumeur/neodex-plugin-billes",
-  "version": "1.1.0",
-  "sha256": "201ecde8f9cc389fbd76468c5b9fd152753e8f9c385710618d75a5ba9ab84f01",
-  "approvedAt": "2026-11-16T04:04:37.427Z",
+  "version": "1.1.1",
+  "sha256": "d52ec9b15d95a30d73f143049929814996161e434aed710bd35d99d7dd8e59f9",
+  "approvedAt": "2026-11-16T16:38:46.559Z",
   "neobase": ">=4.0.0",
-  "signature": "gQdzE3nQc51XW8MqyGNL/yCHGd99sgiQF/hrko5kU8dPfLOPbsSpGX92RKwUSfet3GX3gejwfnhHQZAA3dzCCA=="
+  "signature": "NUdp5XySR7R3Biz6nFADd8ieWm4rdVNmwMKiCiWyh9rFJXSF3W4WpWDBZeVNlL4C2Eikq0hZDIUuYA2x505ZCw=="
 }
