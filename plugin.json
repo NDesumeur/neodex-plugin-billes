@@ -1,7 +1,7 @@
 {
   "id": "neodex.billes",
   "name": "Billes",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "author": "NDesumeur",
   "description": "Le solitaire : clique une bille, puis le trou allumé ; elle saute en arc par-dessus sa voisine, qui roule dans la rigole du plateau en bois. Chaque plateau part d'un trou d'où l'on peut finir avec une seule bille, et un indicateur dit en direct si c'est encore possible. Cinq plateaux (croix anglaise, croix française, petite croix, pyramide, asymétrique), 30 énigmes à étoiles sur sept plateaux, annulation sans limite.",
   "icon": "icon.png",
@@ -14,8 +14,8 @@
     "windows",
     "linux"
   ],
-  "syncMode": "progression",
-  "syncInfo": "Records par plateau, réussites, étoiles des énigmes.",
+  "syncMode": "aucune",
+  "syncInfo": "Rien n'est synchronisé : tes records restent sur cet appareil.",
   "mobile": false,
   "system": false,
   "dependencies": {},
