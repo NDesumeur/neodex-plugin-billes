@@ -4,6 +4,12 @@ Peg solitaire, the marble puzzle on a board full of holes: on each move, a marbl
 
 *Version française : [README.md](README.md)*
 
+## Hint, hexagon and sulphides (new in 1.2.0)
+
+- **The hint** (HINT button or I key): the solver looks for a winning sequence from the current position and shows the next good move, the marble and its landing hole circled in green with an arrow between them. If there is no solution any more, it says so (you need to undo). In a puzzle, a hint costs the 3rd star.
+- **The hexagonal board**: 37 holes on a six-direction grid (you also jump diagonally), with start and finish found by the solver.
+- **Sulphides**: each puzzle solved for the first time gives a glass marble with a design inside (flower, star, spiral, moon, heart, snowflake, in five colours), shown large on the victory screen. The SULPHIDES showcase in the side column shows all 30: in colour the ones you have, as silhouettes the others.
+
 ## How to play
 
 1. Click a glass marble: it lifts, and the holes it can land in light up in yellow.

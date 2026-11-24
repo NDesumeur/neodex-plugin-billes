@@ -1,9 +1,9 @@
 {
   "id": "neodex.billes",
   "name": "Billes",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "author": "NDesumeur",
-  "description": "Le solitaire : clique une bille, puis le trou allumé ; elle saute en arc par-dessus sa voisine, qui roule dans la rigole du plateau en bois. Chaque plateau part d'un trou d'où l'on peut finir avec une seule bille, et un indicateur dit en direct si c'est encore possible. Cinq plateaux (croix anglaise, croix française, petite croix, pyramide, asymétrique), 30 énigmes à étoiles sur sept plateaux, annulation sans limite.",
+  "description": "Le solitaire : clique une bille, puis le trou allumé ; elle saute en arc par-dessus sa voisine, qui roule dans la rigole du plateau en bois. Chaque plateau part d'un trou d'où l'on peut finir avec une seule bille, et un indicateur dit en direct si c'est encore possible. Six plateaux (croix anglaise, croix française, petite croix, pyramide, asymétrique, hexagone), 30 énigmes à étoiles sur sept plateaux, annulation sans limite. Nouveau : un indice qui montre le prochain bon coup, un plateau hexagonal de 37 trous où l'on saute aussi en diagonale, et un sulfure de verre à gagner pour chaque énigme réussie (30 à collectionner dans une vitrine).",
   "icon": "icon.png",
   "entry": "index.js",
   "view": "billes",

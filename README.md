@@ -4,6 +4,12 @@ Le solitaire, le casse-tête de billes sur un plateau troué : à chaque coup, u
 
 *English version: [README.en.md](README.en.md)*
 
+## Indice, hexagone et sulfures (nouveau en 1.2.0)
+
+- **L'indice** (bouton INDICE ou touche I) : le solveur cherche une suite gagnante depuis la position actuelle et montre le prochain bon coup, la bille et son arrivée cerclées de vert avec une flèche entre les deux. S'il n'y a plus de solution, il le dit (il faut annuler). Dans une énigme, un indice coûte la 3e étoile.
+- **Le plateau hexagonal** : 37 trous sur une grille à six directions (on saute aussi en diagonale), départ et arrivée trouvés par le solveur.
+- **Les sulfures** : chaque énigme réussie pour la première fois donne une bille de verre avec un motif dedans (fleur, étoile, spirale, lune, cœur, flocon, en cinq couleurs), montrée en grand sur l'écran de victoire. La vitrine SULFURES de la colonne montre les 30 : en couleur ceux qu'on a, en silhouette les autres.
+
 ## Comment jouer
 
 1. Clique sur une bille de verre : elle se soulève, et les trous où elle peut arriver s'allument en jaune.

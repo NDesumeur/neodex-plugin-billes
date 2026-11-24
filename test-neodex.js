@@ -18,12 +18,18 @@ module.exports = async ({ pj, sleep }) => {
   const r = await S('b.result'); if (!(r && r.n === 1 && r.onT)) throw new Error('la croix anglaise ne finit pas en parfait : ' + JSON.stringify(r));
   if (await S('b.gutter.length') !== 31) throw new Error('les billes sorties ne sont pas dans la rigole');
   for (const name of ['Croix française', 'Petite croix', 'Pyramide', 'Asymétrique']) { await S(`${B}.board('${name}')`); await sleep(300); await shot('1-' + name.split(' ').pop()); }
+  // 1.2.0 : l'hexagone, l'indice
+  await S(`${B}.board('Hexagone')`); await sleep(300); if (await S('b.P.idx.length') !== 37) throw new Error('l’hexagone devait avoir 37 trous');
+  await pj(`document.getElementById('biHint').click(), 0`); await sleep(300); const h = await S('b.hint && [b.hint.a, b.hint.c]');
+  if (!h || !(await S(`b.P.moves.some(m => m[0] === ${h[0]} && m[2] === ${h[1]} && ${B}.has(b.s, m[0]) && ${B}.has(b.s, m[1]) && !${B}.has(b.s, m[2]))`))) throw new Error('l’indice devait montrer un saut permis : ' + JSON.stringify(h));
+  await shot('1-hexagone-indice');
   await S(`${B}.load('Petite croix', [[3, 2]])`); await sleep(2500);
   if (await S('b.state') !== 'lost') throw new Error('l’indicateur ne voit pas un départ impossible : ' + await S('b.state'));
   await pj(`document.querySelector('#biTabs [data-t="pz"]').click(), 0`); await sleep(400);
   if (await pj(`document.querySelectorAll('#biGrid button').length`) !== 30 || await S('b.pz') !== 0) throw new Error('la grille des énigmes ne s’ouvre pas');
   await playOut('enigme1');
   if (await S(`b.result && b.result.stars`) !== 3) throw new Error('l’énigme 1 ne donne pas 3 étoiles');
+  if (await S('b.result.sulf') !== 0 || await pj(`document.querySelectorAll('#biCol canvas').length`) !== 30) throw new Error('l’énigme 1 devait donner son sulfure');
   await click(0); await sleep(300);
   if (await S('b.pz') !== 1 || await pj(`document.querySelectorAll('#biGrid button')[1].disabled`)) throw new Error('l’énigme suivante ne s’ouvre pas');
   for (const i of [9, 15, 22, 27]) { await S(`${B}.play(${i})`); await sleep(400); await shot('2-enigme' + (i + 1)); }
@@ -34,5 +40,5 @@ module.exports = async ({ pj, sleep }) => {
     if (process.env.NEO_FIT_LOG) console.log('FIT', JSON.stringify(L));
     if (L.bottom > L.wh + 1 || L.sw > L.ww + 1) throw new Error('la zone de jeu dépasse la fenêtre : ' + JSON.stringify(L));
   }
-  return 'croix anglaise au clic en ' + n + ' sauts (parfait) · énigme 1 à 3 étoiles · départ impossible reconnu · plateau ' + lay.h + ' px';
+  return 'hexagone et indice · sulfure gagné · croix anglaise au clic en ' + n + ' sauts (parfait) · énigme 1 à 3 étoiles · départ impossible reconnu · plateau ' + lay.h + ' px';
 };

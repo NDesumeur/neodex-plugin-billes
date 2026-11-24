@@ -1,18 +1,19 @@
 // Billes : Le solitaire en croix : une bille saute par-dessus sa voisine dans un trou vide et la fait sortir. Finis avec une seule bille, au centre si tu peux.
 // Jeu NeoDex en pixel art dessiné à la main (police bitmap, cadres et boutons en pixels). Il tourne dans le bac à sable de NeoDex.
 const HTML = `<div class="appWrap wide">
-  <div class="agHead"><span class="label">Billes</span><span class="hint">Clic sur une bille, puis sur le trou d'arrivée · Retour : annuler</span></div>
+  <div class="agHead"><span class="label">Billes</span><span class="hint">Clic sur une bille, puis sur le trou d'arrivée · Retour : annuler · I : indice</span></div>
   <div class="gMain"><div class="gameBox"><canvas id="gc" width="320" height="340"></canvas></div>
     <div class="gSide">
       <div class="sysCard"><b>RECORDS</b><div class="gStats" id="gStats"></div></div>
       <div class="row" id="biTabs"><button class="btn main" data-t="free">PLATEAUX</button><button class="btn" data-t="pz">ÉNIGMES</button></div>
       <div id="biFree" class="gSide"><div class="row"><button class="btn main" id="gNew">NOUVELLE PARTIE</button><select id="biSel" class="f"></select></div></div>
-      <div id="biPzBox" hidden><div class="hint">Finis avec une seule bille, sur la case dorée. 3 étoiles sans annuler, 2 avec trois retours au plus.</div><div class="biGrid" id="biGrid"></div></div>
-      <div class="row"><button class="btn" id="biUndo">ANNULER</button></div>
-      <div class="hint">Une bille saute en ligne droite par-dessus une voisine, jusqu'au trou juste derrière. Les arrivées possibles s'allument en jaune.</div><div class="hint">Annuler sans limite : on apprend en revenant en arrière.</div>
+      <div id="biPzBox" hidden><div class="hint">Finis avec une seule bille, sur la case dorée. 3 étoiles sans annuler ni indice, 2 avec trois retours au plus.</div><div class="biGrid" id="biGrid"></div></div>
+      <div class="row"><button class="btn" id="biUndo">ANNULER</button><button class="btn" id="biHint">INDICE</button></div>
+      <div class="sysCard"><b>SULFURES</b><div class="biCol" id="biCol"></div><div class="hint" id="biColTxt"></div></div>
+      <div class="hint">Une bille saute en ligne droite par-dessus une voisine, jusqu'au trou juste derrière. Les arrivées possibles s'allument en jaune.</div><div class="hint">Annuler sans limite : on apprend en revenant en arrière. L'indice montre le prochain bon coup (dans une énigme, il coûte la 3e étoile).</div><div class="hint">Chaque énigme réussie donne un sulfure, une bille de verre avec un motif dedans : 30 à collectionner.</div>
     </div></div>
 </div>`;
-const CSS = `.gMain{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
+const CSS = `.biCol{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin:6px 0}.biCol canvas{width:100%;image-rendering:pixelated} .gMain{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
 .gameBox{display:grid;place-items:center;padding:10px;background:#05010b;flex:2;min-width:320px;position:relative}
 .gameBox canvas{width:100%;image-rendering:pixelated;cursor:var(--cp,pointer);touch-action:none}
 .gSide{display:flex;flex-direction:column;gap:14px;flex:1;min-width:250px;max-width:420px}
@@ -343,7 +344,34 @@ const BI_BOARDS = {
   'Petite croix': {rows: ['..###..', '..###..', '..###..', '#######', '..###..', '..###..'], start: [2, 3], end: [4, 3]},
   'Pyramide': {rows: ['#....', '##...', '###..', '####.', '#####'], tri: true, start: [0, 0], end: [0, 0]},
   'Asymétrique': {rows: ['..###...', '..###...', '..###...', '########', '########', '########', '..###...', '..###...'], start: [4, 3], end: [4, 3]},
+  'Hexagone': {rows: ['####...', '#####..', '######.', '#######', '.######', '..#####', '...####'], tri: true, start: [1, 0], end: [4, 4]},  // départ et arrivée trouvés par le solveur
 };
+// les sulfures : un par énigme, motif × couleur (30 différents)
+const BI_MOTIF = ['Fleur', 'Étoile', 'Spirale', 'Lune', 'Cœur', 'Flocon'], BI_TINT = [['rouge', 'rouge', '#ff5a6a', '#ffd0d0'], ['bleue', 'bleu', '#4a8aff', '#d0e4ff'], ['verte', 'vert', '#3ad070', '#d0ffd8'], ['dorée', 'doré', '#ffc83a', '#fff0c0'], ['violette', 'violet', '#b06aff', '#ecd8ff']];
+const biSulName = i => { const mo = BI_MOTIF[i % 6], tn = BI_TINT[Math.floor(i / 6) % 5]; return mo + ' ' + (mo === 'Cœur' || mo === 'Flocon' ? tn[1] : tn[0]); };
+const biSulfs = {};
+function biSulfure(i, r, locked) {  // une sphère de verre presque clair, le motif coloré au cœur, un reflet ; grisée si pas encore gagnée
+  const k = i + ':' + r + ':' + !!locked; if (biSulfs[k]) return biSulfs[k];
+  const [, , col, pale] = BI_TINT[Math.floor(i / 6) % 5], m = i % 6;
+  const inMotif = (u, v) => {  // u, v entre -1 et 1, au centre de la bille
+    const d = Math.hypot(u, v), a = Math.atan2(v, u);
+    if (m === 0) return d < .18 ? 2 : d < .62 * Math.abs(Math.cos(a * 2.5)) + .05;                  // fleur à cinq pétales
+    if (m === 1) return d < .22 + .4 * Math.pow(Math.abs(Math.cos(a * 2.5)), 6);                         // étoile
+    if (m === 2) return d < .7 && Math.abs(((a + Math.PI) / (2 * Math.PI) + d * 2.2) % .5 - .25) < .09;  // spirale
+    if (m === 3) return d < .55 && Math.hypot(u - .22, v + .12) > .45;                                   // croissant de lune
+    if (m === 4) { const x = u * 1.25, y = -v * 1.25 + .25; return (x * x + y * y - .35) ** 3 - x * x * y * y * y < 0; }  // cœur
+    return d < .65 && (Math.abs(Math.sin(a * 3)) < .14 || d < .14) || (d > .4 && d < .5 && Math.abs(Math.sin(a * 3)) < .5);  // flocon
+  };
+  return biSulfs[k] = cnv(2 * r + 2, 2 * r + 2, b => { for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
+    const d = Math.hypot(x + .5, y + .5) / r; if (d > 1) continue;
+    const u = (x + .5) / r / .8, v = (y + .5) / r / .8, mo = inMotif(u, v), lt = -((x + .5) / r * .55 + (y + .5) / r * .75);
+    let c = mo === 2 ? '#ffffff' : mo ? col : d > .86 ? '#5a6a7a' : lt > .4 ? '#f4fbff' : lt > -.3 ? '#cfe2ee' : '#9ab4c8';
+    if (!mo && d < .86 && Math.hypot(u, v) < .8 && (x + y) % 3 === 0) c = pale;  // de petites bulles d'air dans le verre
+    if (Math.hypot((x + .5) / r + .4, (y + .5) / r + .44) < .17) c = '#ffffff';
+    if (locked) c = d > .86 ? '#2a2420' : mo ? '#4a3e34' : '#3a302a';
+    px(b, d > .93 ? '#05010b' : c, x + r + 1, y + r + 1);
+  } });
+}
 // plateaux des énigmes en plus
 const BI_PZB = {...BI_BOARDS,
   'Croix allemande': {rows: ['...###...', '...###...', '...###...', '#########', '#########', '#########', '...###...', '...###...', '...###...']},
@@ -452,12 +480,12 @@ function biPuzzle(i) {
   }
   return {board, s, t};
 }
-const bis = gstore('billes', {board: 'Croix anglaise', wins: 0, games: 0}); bis.pz ??= {}; bis.perfect ??= 0;
+const bis = gstore('billes', {board: 'Croix anglaise', wins: 0, games: 0}); bis.pz ??= {}; bis.perfect ??= 0; bis.hints ??= 0;
 let bi = null;
 const biLeft = () => biCount(bi.s);
 const biMoves = () => bi.P.moves.filter(([a, b, c]) => biHas(bi.s, a) && biHas(bi.s, b) && !biHas(bi.s, c));
 function biLoad(P, s, target, pz) {
-  bi = Object.assign(bi || {tick: 0, raf: 0}, {mode: 'play', P, s, target, pz, sel: -1, hist: [], undos: 0, jump: null, fly: [], gutter: [], endAt: 0, result: null, state: '?', sol: null, solKeys: null,
+  bi = Object.assign(bi || {tick: 0, raf: 0}, {mode: 'play', P, s, target, pz, sel: -1, hist: [], undos: 0, jump: null, fly: [], gutter: [], endAt: 0, result: null, state: '?', sol: null, solKeys: null, hint: null, hints: 0,
     col: P.idx.map((_, i) => biColOf(i, P.name))});
   biCheck(); biInfo();
 }
@@ -479,7 +507,7 @@ function biCheck(tries = 0) {
   else { bi.state = '?'; if (tries < 40) setTimeout(() => { if (bi.s === s) biCheck(tries + 1); }, 40); }
 }
 function biJump([a, b, c]) {
-  bi.hist.push({s: bi.s, col: bi.col.slice(), gutter: bi.gutter.slice()}); bi.sel = -1;
+  bi.hist.push({s: bi.s, col: bi.col.slice(), gutter: bi.gutter.slice()}); bi.sel = -1; bi.hint = null;
   bi.s = biFlip(biFlip(biFlip(bi.s, a), b), c); bi.col[c] = bi.col[a];
   bi.jump = {a, c, t: 0, col: bi.col[c]}; bi.fly.push({from: b, col: bi.col[b], t: 0, slot: bi.gutter.length}); bi.gutter.push(bi.col[b]);
   beep(900 + Math.random() * 200, .04, 'sine', 0, .05);
@@ -487,8 +515,9 @@ function biJump([a, b, c]) {
   if (!biMoves().length) {
     bi.mode = 'over'; bi.endAt = bi.tick; const n = biLeft(), onT = n === 1 && biHas(bi.s, bi.target);
     if (bi.pz >= 0) {
-      const stars = onT ? (bi.undos === 0 ? 3 : bi.undos <= 3 ? 2 : 1) : 0; bi.result = {n, onT, stars};
+      const stars = onT ? (bi.undos === 0 && !bi.hints ? 3 : bi.undos <= 3 ? 2 : 1) : 0; bi.result = {n, onT, stars, sulf: stars && !bis.pz[bi.pz] ? bi.pz : -1};
       if (stars > (bis.pz[bi.pz] || 0)) bis.pz[bi.pz] = stars;
+      if (bi.result.sulf >= 0) setTimeout(() => [1568, 2093, 2637].forEach((f, i) => setTimeout(() => beep(f, .1, 'sine', 0, .05), i * 90)), 600);  // un nouveau sulfure
     } else {
       bis.games++; bi.result = {n, onT}; if (n === 1) bis.wins++; if (onT) bis.perfect++;
       const k = 'billes:' + bis.board; if (games.best[k] == null || n < games.best[k]) games.best[k] = n;
@@ -496,6 +525,12 @@ function biJump([a, b, c]) {
     saveGames(); biInfo();
     if (n === 1 && (onT || bi.pz < 0)) [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, .14, 'triangle'), i * 100)); else beep(220, .3, 'triangle', 160, .06);
   }
+}
+function biHint(quiet) {
+  if (!bi || bi.mode !== 'play') return null;
+  const goal = bi.pz >= 0 ? bi.target : -1, sol = biSolve(bi.P, bi.s, goal, 4e5);
+  if (!sol || !sol.length) { bi.hint = {none: true, t: bi.tick}; if (!quiet) beep(200, .1, 'triangle'); return null; }
+  const [a, , c] = bi.P.moves[sol[0]]; bi.hint = {a, c, t: bi.tick}; bi.sel = a; bi.hints++; bis.hints++; saveGames(); if (!quiet) beep(1046, .08, 'triangle', 1568, .05); return [a, c];
 }
 const biGut = k => { const an = -Math.PI / 2 + k * .085 + Math.floor(k / 70) * .04; return [BI_O.x + Math.cos(an) * (BI_O.R - 10), BI_O.y + Math.sin(an) * (BI_O.R - 10)]; };
 function biDraw() {
@@ -505,6 +540,11 @@ function biDraw() {
   const gr = Math.max(5, Math.round(r * .62));
   bi.gutter.forEach((c, k) => { if (bi.fly.some(f => f.slot === k)) return; const [x, y] = biGut(k); g.drawImage(biBall(gr, c), Math.round(x - gr - 1), Math.round(y - gr - 1)); });
   const moves = bi.sel >= 0 ? biMoves().filter(m => m[0] === bi.sel) : [];
+  if (bi.hint && !bi.hint.none && bi.tick - bi.hint.t < 240) {  // l'indice : la bille et son arrivée cerclées de vert, une flèche entre les deux
+    const [ax, ay] = P.pos[bi.hint.a], [cx, cy] = P.pos[bi.hint.c], k = .5 + .5 * Math.sin(t / 5);
+    g.strokeStyle = 'rgba(126,224,122,' + (.5 + k * .5).toFixed(2) + ')'; g.lineWidth = 2; for (const [x, y] of [[ax, ay], [cx, cy]]) { g.beginPath(); g.arc(x, y, r + 3 + k * 2, 0, 7); g.stroke(); }
+    const n = Math.max(1, Math.round(Math.hypot(cx - ax, cy - ay) / 4)); for (let q = 1; q < n; q++) if ((q + (t >> 3)) % 2) px(g, '#7ee07a', Math.round(ax + (cx - ax) * q / n) - 1, Math.round(ay + (cy - ay) * q / n - Math.sin(q / n * Math.PI) * P.C * .5) - 1, 2, 2);
+  }
   // les arrivées possibles brillent
   for (const [, , c] of moves) { const [x, y] = P.pos[c], k = .5 + .5 * Math.sin(t / 6); g.fillStyle = 'rgba(255,216,74,' + (.25 + k * .35).toFixed(2) + ')'; g.beginPath(); g.arc(x, y, r * .8, 0, 7); g.fill(); px(g, '#fff0a0', x - 2, y - 2, 4, 4); }
   P.pos.forEach(([x, y], i) => {
@@ -528,12 +568,14 @@ function biDraw() {
   pxFont(g, biLeft() + ' billes', 8, 16, '#ffffff', 8);
   const lab = bi.state === 'win' ? [bi.pz >= 0 ? 'ARRIVÉE POSSIBLE' : 'UNE BILLE POSSIBLE', '#7ee07a'] : bi.state === 'lost' ? [bi.pz >= 0 ? 'ARRIVÉE IMPOSSIBLE' : 'PLUS QU\'À FAIRE AU MIEUX', '#ff8a6a'] : ['ON CHERCHE…', '#c8a880'];
   pxFont(g, lab[0], W - 8, 16, lab[1], 8, 'right');
-  if (bi.pz >= 0) pxFont(g, 'ÉNIGME ' + (bi.pz + 1), W / 2, 40, '#ffd84a', 8, 'center');
+  if (bi.pz >= 0) pxFont(g, 'ÉNIGME ' + (bi.pz + 1) + (bi.hints ? ' · indice utilisé' : ''), W / 2, 40, '#ffd84a', 8, 'center');
+  if (bi.hint?.none && bi.tick - bi.hint.t < 150) pxFont(g, 'Plus de solution d\'ici : annule un coup', W / 2, H - 10, '#ff8a6a', 8, 'center');
   if (bi.mode === 'over' && t - bi.endAt > 30) {
     const {n, onT, stars} = bi.result;
-    const lines = bi.pz >= 0 ? [[stars ? 'RÉUSSIE !' : 'RATÉ', stars ? '#5fdf6a' : '#ffa030', 16], [stars ? '*'.repeat(stars) + ' ' + ['', '1 étoile', '2 étoiles', '3 étoiles'][stars] : n > 1 ? n + ' billes restantes' : 'pas sur la case dorée', '#ffd84a'], [stars < 3 && stars ? 'Sans annuler : 3 étoiles' : stars ? 'Clic : énigme suivante' : 'Retour : annuler', '#ffffff']]
+    const lines = bi.pz >= 0 ? [[stars ? 'RÉUSSIE !' : 'RATÉ', stars ? '#5fdf6a' : '#ffa030', 16], [stars ? '*'.repeat(stars) + ' ' + ['', '1 étoile', '2 étoiles', '3 étoiles'][stars] : n > 1 ? n + ' billes restantes' : 'pas sur la case dorée', '#ffd84a'], [stars < 3 && stars ? 'Sans annuler ni indice : 3 étoiles' : stars ? 'Clic : énigme suivante' : 'Retour : annuler', '#ffffff']]
       : [[n === 1 ? (onT ? 'PARFAIT !' : 'UNE SEULE BILLE !') : 'PLUS DE SAUT', n === 1 ? '#5fdf6a' : '#ffa030', 16], [n + ' bille' + (n > 1 ? 's' : '') + ' restante' + (n > 1 ? 's' : ''), '#ffffff'], [n === 1 && !onT ? 'Parfait : finir sur la case dorée' : 'Retour : annuler · clic : rejouer', '#ffd84a']];
     gameText(g, W, lines, 160);
+    if (bi.result.sulf >= 0) { const sr = 20, s = biSulfure(bi.result.sulf, sr); g.drawImage(s, W / 2 - sr - 1, 232 - sr - 1 - Math.round(Math.abs(Math.sin(t / 12)) * 3)); pxFont(g, 'Nouveau sulfure : ' + biSulName(bi.result.sulf), W / 2, 270, '#c8f0ff', 8, 'center'); }
   }
 }
 const biHit = (mx, my) => { let best = -1, bd = 1e9; bi.P.pos.forEach(([x, y], i) => { const d = Math.hypot(mx - x, my - y); if (d < bd) { bd = d; best = i; } }); return bd < bi.P.C * .55 ? best : -1; };
@@ -544,11 +586,16 @@ cv.onpointerdown = e => {
   if (biHas(bi.s, i)) { bi.sel = i; beep(700, .02, 'square', 0, .03); }
   else if (bi.sel >= 0) { const m = biMoves().find(m => m[0] === bi.sel && m[2] === i); if (m) biJump(m); else beep(150, .06, 'square', 0, .04); }
 };
-const biUndo = () => { const h = bi.hist.pop(); if (!h) return; Object.assign(bi, h, {sel: -1, mode: 'play', jump: null, fly: [], result: null}); bi.undos++; biCheck(); };
-document.addEventListener('keydown', e => { if (!keyOk(e) || !bi) return; if (e.key === 'Backspace' || (e.key.toLowerCase() === 'z' && e.ctrlKey)) { e.preventDefault(); biUndo(); } });
-function biInfo() {
+const biUndo = () => { const h = bi.hist.pop(); if (!h) return; Object.assign(bi, h, {sel: -1, mode: 'play', jump: null, fly: [], result: null, hint: null}); bi.undos++; biCheck(); };
+document.addEventListener('keydown', e => { if (!keyOk(e) || !bi) return; if (e.key.toLowerCase() === 'i' && !e.ctrlKey) { e.preventDefault(); biHint(); return; } if (e.key === 'Backspace' || (e.key.toLowerCase() === 'z' && e.ctrlKey)) { e.preventDefault(); biUndo(); } });
+function biCol() {  // la vitrine des sulfures : gagnés en couleur, les autres en silhouette
+  const got = BI_PZ.filter((_, i) => bis.pz[i] > 0).length;
+  $('biCol').replaceChildren(...BI_PZ.map((_, i) => { const c = el('canvas'), on = bis.pz[i] > 0, s = biSulfure(i, 11, !on); c.width = s.width; c.height = s.height; c.getContext('2d').drawImage(s, 0, 0); c.title = on ? biSulName(i) : 'Énigme ' + (i + 1); return c; }));
+  $('biColTxt').textContent = got + ' / 30 sulfures';
+}
+function biInfo() { biCol();
   const b = games.best['billes:' + bis.board], st = Object.values(bis.pz).reduce((a, x) => a + x, 0), done = Object.values(bis.pz).filter(x => x > 0).length;
-  showStats([['Record sur ce plateau', b != null ? b + ' bille' + (b > 1 ? 's' : '') : '—'], ['Réussites (1 bille)', bis.wins + ' / ' + bis.games], ['Parfaits', bis.perfect], ['Énigmes réussies', done + ' / 30'], ['Étoiles', st + ' / 90']]);
+  showStats([['Record sur ce plateau', b != null ? b + ' bille' + (b > 1 ? 's' : '') : '—'], ['Réussites (1 bille)', bis.wins + ' / ' + bis.games], ['Parfaits', bis.perfect], ['Énigmes réussies', done + ' / 30'], ['Étoiles', st + ' / 90'], ['Indices demandés', bis.hints]]);
 }
 // la grille des énigmes : chacune s'ouvre quand la précédente est réussie
 function biGrid() {
@@ -565,16 +612,20 @@ function biTab(t) {
 $('biTabs').onclick = e => { const t = e.target.closest('[data-t]')?.dataset.t; if (t) biTab(t); };
 $('gNew').onclick = () => { biNew(); $('gNew').blur(); };
 $('biUndo').onclick = () => { biUndo(); $('biUndo').blur(); };
+$('biHint').onclick = () => { biHint(); $('biHint').blur(); };
 $('biSel').onchange = () => { biNew($('biSel').value); $('biSel').blur(); };
 {  // vérification : la croix anglaise a 4 sauts au départ et se résout jusqu'au centre ; chaque énigme a des sauts et se résout jusqu'à sa case
   const P = biP('Croix anglaise'), s = biStart(P, [P.find([3, 3])]), first = P.moves.filter(([a, b, c]) => biHas(s, a) && biHas(s, b) && !biHas(s, c)).length;
   const pz = [0, 7, 13, 21].map(i => { const z = biPuzzle(i), Q = biP(z.board); return biCount(z.s) > 2 && !!biSolve(Q, z.s, z.t, 2e5); });
-  const ok = first === 4 && !!biSolve(P, s, P.find([3, 3]), 2e5) && pz.every(Boolean) && Object.values(BI_BOARDS).every(B => B.start && B.end);
-  console.assert(ok, 'billes', {first, pz}); view.dataset.selfcheck = ok ? 'ok' : JSON.stringify({first, pz});
+  const HX = biP('Hexagone'), hs = biStart(HX, [HX.find(BI_BOARDS.Hexagone.start)]), hex = HX.idx.length === 37 && !!biSolve(HX, hs, HX.find(BI_BOARDS.Hexagone.end), 2e6);
+  const keepBi = bi; bi = {P, s, target: P.find([3, 3]), pz: -1, mode: 'play', tick: 0, hints: 0, sel: -1}; const hint = biHint(true), hintOk = !!hint && biMoves().some(m => m[0] === hint[0] && m[2] === hint[1]); bis.hints--; bi = keepBi;
+  const names = new Set(BI_PZ.map((_, i) => biSulName(i))), sulf = names.size === 30 && biSulfure(4, 11).width === 24;
+  const ok = first === 4 && !!biSolve(P, s, P.find([3, 3]), 2e5) && pz.every(Boolean) && Object.values(BI_BOARDS).every(B => B.start && B.end) && hex && hintOk && sulf;
+  console.assert(ok, 'billes', {first, pz, hex, hintOk, sulf}); view.dataset.selfcheck = ok ? 'ok' : JSON.stringify({first, pz, hex, hintOk, sulf});
 }
 ctx.onOpen(() => {
   if (!bi) biNew(); if (bi.mode === 'pause') bi.mode = 'play';
-  cv.__bi = {st: () => bi, play: biPlay, board: biNew, tab: biTab, solve: () => biSolve(bi.P, bi.s, bi.pz >= 0 ? bi.target : -1, 2e6), has: biHas, puz: biPuzzle, load: (n, holes) => { const P = biP(n); biLoad(P, biStart(P, holes.map(P.find)), -1, -1); }};
+  cv.__bi = {st: () => bi, hint: biHint, play: biPlay, board: biNew, tab: biTab, solve: () => biSolve(bi.P, bi.s, bi.pz >= 0 ? bi.target : -1, 2e6), has: biHas, puz: biPuzzle, load: (n, holes) => { const P = biP(n); biLoad(P, biStart(P, holes.map(P.find)), -1, -1); }};
   gameLoop(bi, 'billes', () => {}, biDraw); biInfo();
 });
 
