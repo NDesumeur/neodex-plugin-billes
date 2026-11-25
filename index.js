@@ -301,6 +301,9 @@ export default async function (ctx) {
   const saveGames = () => { clearTimeout(gamesTimer); gamesTimer = setTimeout(() => { gamesTimer = null; folder.write('games', games).catch(() => {}); }, 500); };
   const best = (k, v) => { const b = games.best[k]; if (b == null || v > b) { games.best[k] = v; saveGames(); return true; } return false; };
   const gstore = (k, init) => (games[k] ??= init);
+  // les trophées de NeoDex (3.4.8 et plus) : succès et records déclarés dans plugin.json ; sur un NeoDex plus ancien, rien ne se passe
+  const trophy = id => { ctx.games?.unlock(id).catch(() => {}); };
+  const trophyRecord = (id, v) => { if (v != null && Number.isFinite(+v)) ctx.games?.record(id, +v).catch(() => {}); };
 function gameLoop(st, appKey, update, draw) {
   cancelAnimationFrame(st.raf);
   const STEP = 1000 / 60; let acc = 0, last = performance.now();
@@ -593,7 +596,7 @@ function biCol() {  // la vitrine des sulfures : gagnés en couleur, les autres 
   $('biCol').replaceChildren(...BI_PZ.map((_, i) => { const c = el('canvas'), on = bis.pz[i] > 0, s = biSulfure(i, 11, !on); c.width = s.width; c.height = s.height; c.getContext('2d').drawImage(s, 0, 0); c.title = on ? biSulName(i) : 'Énigme ' + (i + 1); return c; }));
   $('biColTxt').textContent = got + ' / 30 sulfures';
 }
-function biInfo() { biCol();
+function biInfo() { biCol(); setTimeout(biTrophies);
   const b = games.best['billes:' + bis.board], st = Object.values(bis.pz).reduce((a, x) => a + x, 0), done = Object.values(bis.pz).filter(x => x > 0).length;
   showStats([['Record sur ce plateau', b != null ? b + ' bille' + (b > 1 ? 's' : '') : '—'], ['Réussites (1 bille)', bis.wins + ' / ' + bis.games], ['Parfaits', bis.perfect], ['Énigmes réussies', done + ' / 30'], ['Étoiles', st + ' / 90'], ['Indices demandés', bis.hints]]);
 }
@@ -622,6 +625,14 @@ $('biSel').onchange = () => { biNew($('biSel').value); $('biSel').blur(); };
   const names = new Set(BI_PZ.map((_, i) => biSulName(i))), sulf = names.size === 30 && biSulfure(4, 11).width === 24;
   const ok = first === 4 && !!biSolve(P, s, P.find([3, 3]), 2e5) && pz.every(Boolean) && Object.values(BI_BOARDS).every(B => B.start && B.end) && hex && hintOk && sulf;
   console.assert(ok, 'billes', {first, pz, hex, hintOk, sulf}); view.dataset.selfcheck = ok ? 'ok' : JSON.stringify({first, pz, hex, hintOk, sulf});
+}
+// les trophées, tirés des statistiques et des records gardés (aussi à l'ouverture : ce qui a été fait avant compte)
+function biTrophies() {
+  const pz = BI_PZ.map((_, i) => bis.pz[i] || 0), done = pz.filter(x => x > 0).length, st = pz.reduce((a, x) => a + x, 0), one = b => games.best['billes:' + b] === 1;
+  const sig = [bis.games, bis.wins, bis.perfect, st, Object.keys(BI_BOARDS).filter(one).length].join(); if (sig === biTrophies.sig) return; biTrophies.sig = sig;
+  trophyRecord('etoiles', st || null); trophyRecord('reussites', bis.wins || null);
+  if (bis.games >= 1) trophy('premier'); if (bis.wins >= 1) trophy('une'); if (bis.perfect >= 1) trophy('parfait'); if (Object.keys(BI_BOARDS).every(one)) trophy('plateaux');
+  if (done >= 1) trophy('enigme'); if (done >= 10) trophy('enigmes10'); if (done >= BI_PZ.length) trophy('enigmes30'); if (pz.every(x => x >= 3)) trophy('etoiles');
 }
 ctx.onOpen(() => {
   if (!bi) biNew(); if (bi.mode === 'pause') bi.mode = 'play';
